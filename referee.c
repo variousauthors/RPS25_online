@@ -7,6 +7,9 @@
 
 #include "protocol.h"
 
+// this variable should only be incremented in forks
+int GAME_NUMBER = 0;
+
 // each row i is the symbol player 1 chose
 // each col j is the symbol player 2 chose
 // each entry ij is how player 1 fared
@@ -22,15 +25,34 @@ int RESULT_MATRIX[CARDINALITY][CARDINALITY] = {
     1: player 1 wins
     2: player 2 wins */
 
+// sends the message to the given client
 int display_output(char * message, int Fd);
+
+// have the client prompt the user for a string and get it
 char * get_string(int Fd);
+
+// have the client prompt the user for a symbol (1: rock, 2:paper...)
+// returns the index (1, 2, 3...) of the symbol in SYMBOLS
 int get_symbol_index(int Fd);
+
+// pits the two players in a contest of wits
 int perform_one_contest(int player_1, int player_2);
+
+// informs both players of the result of the contest
 void adjudicate_game(int result, int player_1, int player_2);
+
+// requests that both clients prepare to hang up
 int disconnect_client(int Fd); 
+
+// has the client request confirmation from the user and returns 1 or 0
 int user_confirms(char * confirmation_message, int Fd);
 
+int rock_paper_scissors(int player_1, int player_2);
+
+int ask_the_players_to_continue(int player_1, int player_2);    
+
 int make_server_file_descriptor() {
+  // boiler plate
 
   int serverFd, serverLen, clientFd;
   struct sockaddr_un serverUNIXAddress;/* Server address */
@@ -56,7 +78,7 @@ main () {
   int clientFd, clientFd_2;
   int serverFd = make_server_file_descriptor();
 
-  printf("%s\n", "Rock Paper Scissors client is up.");
+  printf("%s\n", "LOG: Rock Paper Scissors client is up.");
   fflush(stdout);
 
   listen (serverFd, 5); /* Maximum pending connection length */
@@ -64,25 +86,22 @@ main () {
   while (1) {
 
     // wait for client connection 
-    printf("%s\n", "Waiting for players...");
+    printf("%s\n", "LOG: Waiting for players...");
     fflush(stdout);
    
     /* Accept a client connection */
     clientFd = accept (serverFd, 0, 0);
-    printf("%s\n", "Player One: ready");
+    printf("%s\n", "LOG: Player One: ready");
     fflush(stdout);
 
     clientFd_2 = accept (serverFd, 0, 0);
-    printf("%s\n", "Player Two: ready");
+    printf("%s\n", "LOG: Player Two: ready");
     fflush(stdout);
 
-    printf("%s\n", "GO!");
+    printf("%s\n", "LOG: Two players have connected");
     fflush(stdout);
 
-    int rc;
-    int length;
-    char ch;
-    enum Signal signal;
+    // get ready to FORK
     pid_t pid;
 
     /* Create child to run the event */ 
@@ -91,65 +110,31 @@ main () {
       int keep_going; // ha ha ha we can't use continue because it is reserved
    
       do {
-        printf("Game Starts\n");
-        int result = perform_one_contest(clientFd, clientFd_2);
-
-        printf("Announcing results\n");
-        adjudicate_game(result, clientFd, clientFd_2);
+        rock_paper_scissors(clientFd, clientFd_2);
+        keep_going = ask_the_players_to_continue(clientFd, clientFd_2);    
   
-        display_output("Waiting for player 1...", clientFd_2);
-
-        int player_1_keep_going = user_confirms("Continue? (y/n)", clientFd); 
-        display_output("Waiting for player 2...", clientFd);
-        int player_2_keep_going = user_confirms("Continue? (y/n)", clientFd_2); 
-
-        if (player_1_keep_going && player_2_keep_going) {
-
-          keep_going = 1;
-          display_output("Both players have agreed to CONTINUE", clientFd);
-          display_output("Both players have agreed to CONTINUE", clientFd_2);
-          display_output("Waiting for player 1...", clientFd_2);
-
-        } else if (player_1_keep_going) {
-
-          keep_going = 0;
-          display_output("Player 2 is backing down...", clientFd);
-          display_output("Player 2 is backing down...", clientFd_2);
-
-        } else if (player_2_keep_going) {
-
-          keep_going = 0;
-          display_output("Player 1 is backing down...", clientFd);
-          display_output("Player 1 is backing down...", clientFd_2);
-
-        } else {
-          keep_going = 0;
-          display_output("You both agreed to stop playing.", clientFd);
-          display_output("You both agreed to stop playing.", clientFd_2);
-        }
-
       } while (keep_going);
 
-      printf("%s\n", "Tell both players to hang up\n");
+      printf("%s\n", "LOG: Tell both players to hang up\n");
 
       disconnect_client(clientFd);
       disconnect_client(clientFd_2);
 
-      printf("%s\n", "Close the connections\n");
+      printf("%s\n", "LOG: Close the connections\n");
       
 
       exit(0);
     } else {
 
       waitpid(pid, NULL);
-      printf("%s\n", "Back from child.");
-      printf("%s\n", "Game over");
+      printf("%s\n", "LOG: Back from child.");
+      printf("%s\n", "LOG: Game over");
       fflush(stdin);
     }
 
   }
 
-  printf("server exiting\n");
+  printf("LOG: server exiting\n");
 
 }
 
@@ -226,20 +211,33 @@ int get_symbol_index(int Fd) {
 
 int perform_one_contest(int player_1, int player_2) {
 
+  display_output("Choose Your WEAPON:", player_1);
+  display_output("Choose Your WEAPON:", player_2);
+  
   // get player one's choice
+  display_output("  wait while player 1 chooses...", player_2);
   int index_1 = get_symbol_index(player_1);
 
   display_output("You chose...", player_1);
   display_output(SYMBOLS[index_1], player_1);
-  display_output("Waiting for player 2...", player_1);
+  display_output("  wait while player 2 chooses...", player_1);
 
   // get player two's choice
   int index_2 = get_symbol_index(player_2);
 
+  display_output("You chose...", player_2);
   display_output(SYMBOLS[index_2], player_2);
 
-  printf("%s\n", "display results\n");
-  printf("result: %d\n", RESULT_MATRIX[index_1][index_2]);
+  printf("%s\n", "LOG: display results\n");
+  printf("LOG: result: %d\n", RESULT_MATRIX[index_1][index_2]);
+
+  char buffer[256];
+  snprintf(buffer, sizeof buffer, "%s %s %s\n", SYMBOLS[index_1], "vs", SYMBOLS[index_2]);
+  char * message = malloc(strlen(buffer));
+  strcpy(message, buffer);
+  
+  display_output(message, player_1);
+  display_output(message, player_2);
 
   return RESULT_MATRIX[index_1][index_2];
 }
@@ -248,28 +246,28 @@ void adjudicate_game(int result, int player_1, int player_2) {
 
   switch (result) {
     case  0 :
-      printf("tie game\n");
+      printf("LOG: tie game\n");
 
       display_output("Tie Game!", player_1);
       display_output("Tie Game!", player_2);
       break;
 
     case  1 :
-      printf("player 1 wins!\n");
+      printf("LOG: player 1 wins!\n");
 
       display_output("You Win!", player_1);
       display_output("Player 1 wins...", player_2);
       break;
 
     case  2 :
-      printf("player 1 loses...\n");
+      printf("LOG: player 1 loses...\n");
 
       display_output("Player 2 wins...", player_1);
       display_output("You Win!", player_2);
       break;
 
     default :
-      printf("YOU ALL SUCK\n");
+      printf("LOG: YOU ALL SUCK\n");
       break;
   }
 }
@@ -295,10 +293,53 @@ int user_confirms(char * confirmation_message, int Fd) {
 
   enum Signal signal = CONFIRM;
 
-printf("before write");
   write(Fd, &signal, sizeof(int));
   read(Fd, &confirms, sizeof(int));
-printf("after read");
 
   return confirms;
+}
+
+int rock_paper_scissors(int player_1, int player_2) {
+
+  printf("LOG: Game %d Starts\n", ++GAME_NUMBER);
+  int result = perform_one_contest(player_1, player_2);
+
+  printf("LOG: Announcing results\n");
+  adjudicate_game(result, player_1, player_2);
+
+}
+
+int ask_the_players_to_continue(int player_1, int player_2) {
+  int keep_going;
+  display_output("Waiting for player 1...", player_2);
+
+  int player_1_keep_going = user_confirms("Continue? (y/n)", player_1); 
+  display_output("Waiting for player 2...", player_1);
+  int player_2_keep_going = user_confirms("Continue? (y/n)", player_2); 
+
+  if (player_1_keep_going && player_2_keep_going) {
+
+    keep_going = 1;
+    display_output("Both players have agreed to CONTINUE", player_1);
+    display_output("Both players have agreed to CONTINUE", player_2);
+
+  } else if (player_1_keep_going) {
+
+    keep_going = 0;
+    display_output("Player 2 is backing down...", player_1);
+    display_output("Player 2 is backing down...", player_2);
+
+  } else if (player_2_keep_going) {
+
+    keep_going = 0;
+    display_output("Player 1 is backing down...", player_1);
+    display_output("Player 1 is backing down...", player_2);
+
+  } else {
+    keep_going = 0;
+    display_output("You both agreed to stop playing.", player_1);
+    display_output("You both agreed to stop playing.", player_2);
+  }
+
+  return keep_going;
 }

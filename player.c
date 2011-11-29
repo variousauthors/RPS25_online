@@ -9,40 +9,22 @@
 
 #include "protocol.h"
 
-int get_integer_in_range(int min, int max) {
+/* gets an integer in the given range, from min to max. 
+ * @param min the least acceptable number
+ * @param max the greates acceptable number 
+ * @returns an integer in the given range */
+int get_integer_in_range(int min, int max);
 
-  int number = -1;
+/* gets an integer from stdin. 
+ * @param number a pointer to populate with the integer 
+ * @returns true if and only if an integer was read */
+int get_an_integer(int * number);
 
-  while( true ) {
-    if ( get_an_integer(&number) ) {
-
-      if (integer_is_in_range(number, min, max) ) {
-        break;
-      }
-
-      printf("%2s... %d\n", "Input was not in range", number);
-      printf("%2s ", "Enter your selection:");
-    }
-    
-  }
-
-  return number;
-}
-
-int get_an_integer(int * number) {
-
-  char buff[13];
-
-  // if we succesfully read from stdin
-  if ( fgets(buff, sizeof buff, stdin) ) {
-
-    // return true if sscanf read one integer
-    return sscanf(buff, "%d", number) == 1;
-  }
-  
-  return 0;
-}
-
+/* Confirms that a given number is in the given range. 
+ * @param number the number in question
+ * @param min the least number in the range 
+ * @param max the greatest number in the range 
+ * @returns true if and only if the given number is in the range */
 int integer_is_in_range(int number, int min, int max) {
 
   return (min <= number && number <= max);
@@ -53,7 +35,7 @@ void get_string(char * buffer, int length, FILE * stream) {
 }
 
 void display_choices() {
-  printf("", "Choose your Weapon:");
+  printf("\n");
   
   int i;
   for(i = 0; i < CARDINALITY; i++) {
@@ -61,7 +43,37 @@ void display_choices() {
   }
   
   printf("\n");
+  fflush(stdout);
 } 
+
+void display_title() {
+
+  system("clear");
+  printf("     ***** ***          ***** **          *******    \n");
+  printf("  ******  * **       ******  ****       *       ***  \n");
+  printf(" **   *  *  **      **   *  *  ***     *         **  \n");
+  printf("*    *  *   **     *    *  *    ***    **        *   \n");
+  printf("    *  *    *          *  *      **     ***          \n");
+  printf("   ** **   *          ** **      **    ** ***        \n");
+  printf("   ** **  *           ** **      **     *** ***      \n");
+  printf("   ** ****          **** **      *        *** ***    \n");
+  printf("   ** **  ***      * *** **     *           *** ***  \n");
+  printf("   ** **    **        ** *******              ** *** \n");
+  printf("   *  **    **        ** ******                ** ** \n");
+  printf("      *     **        ** **                     * *  \n");
+  printf("  ****      ***       ** **           ***        *   \n");
+  printf(" *  ****    **        ** **          *  *********    \n");
+  printf("*    **     *    **   ** **         *     *****      \n");
+  printf("*               ***   *  *          *                \n");
+  printf(" **              ***    *            **              \n");
+  printf("                  ******   .--.      .            \n");
+  printf("                    ***   :    :     |   o         \n");
+  printf("                          |    |.--. |   .  .--. .-. \n");
+  printf("                          :    ;|  | |   |  |  |(.-' \n");
+  printf("                           `--' '  `-`--' `-'  `-`--'\n");
+  printf("  Welcome to the Paper, Scissors and Rock game.\n");
+  fflush(stdout);
+}
 
 int establish_client_file_descriptor() {
 
@@ -101,50 +113,47 @@ main () {
   int sentinel = 1;
   int length;
   int confirm;
-        
-  printf("really?\n");
+  char buffer[256];
+
+  display_title();
 
   while(sentinel) {
     signal = (enum Signal)wait_for_signal(clientFd);
-    printf("received: %d\n", signal);
 
     switch(signal) {
       // the server says: hang up!
       case HANG_UP : 
-        printf("hanging up\n");
+
+        // we write to let server know we got the message
         write(clientFd, &affirm, sizeof(char));
         sentinel = 0;
         break;
 
       // the server says: output the next string
       case DISPLAY_OUTPUT : 
-        printf("receiving output\n");
-        read(clientFd, &length, sizeof(int));
-        printf("  message length %d\n", length);
 
+        read(clientFd, &length, sizeof(int));
         char * message = malloc(length);
         read(clientFd, message, length);
-        printf("  received: \"%s\"\n", message);
+        printf("  %s\n", message);
+
+        // we write to let server know we got the message
         write(clientFd, &affirm, sizeof(char));
         free(message);
         break;
 
       // the server says: send me input from the user
       case GET_SYMBOL : 
-        printf("collecting input\n");
-       
         display_choices(); 
 
         selection = get_integer_in_range(1,3);
-        selection--;
+        selection--; // the symbol array is 0 indexed
 
         write(clientFd, &selection, sizeof(int));
         break;
 
       case GET_STRING :
-        printf("collecting a string\n");
 
-        char buffer[256];
         get_string(buffer, 256, stdin);        
         message = malloc(strlen(buffer));
         strcpy(message, buffer);
@@ -156,18 +165,14 @@ main () {
         break;
 
       case CONFIRM :
-        printf("confirm:\n");
         confirm = user_confirms();
         write(clientFd, &confirm, sizeof(int));
         break;
 
       default :
-        printf("nothing\n");
         break;
     } 
   } 
-
-  printf("\ngot out of the loop\n");
 
   // get input from user
   
@@ -227,15 +232,46 @@ int user_confirms() {
 
   char choice;
     
-printf("going in loop\n");
   while (choice != 'y' && choice != 'n') {
-printf("before fgetc\n");
     int ch = fgetc(stdin);
     choice = (char)ch;
-printf("%d %c\n", ch, choice);
   }
 
   putc(choice, stdin);
-printf("returning\n");
   return (choice == 'y');
 }
+
+int get_integer_in_range(int min, int max) {
+
+  int number = -1;
+
+  while( true ) {
+    if ( get_an_integer(&number) ) {
+
+      if (integer_is_in_range(number, min, max) ) {
+        break;
+      }
+
+      printf("%2s... %d\n", "Input was not in range", number);
+      printf("%2s ", "Enter your selection:");
+    }
+    
+  }
+
+  return number;
+}
+
+int get_an_integer(int * number) {
+
+  char buff[13];
+
+  // if we succesfully read from stdin
+  if ( fgets(buff, sizeof buff, stdin) ) {
+
+    // return true if sscanf read one integer
+    return sscanf(buff, "%d", number) == 1;
+  }
+  
+  return 0;
+}
+

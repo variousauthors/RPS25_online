@@ -1,0 +1,98 @@
+Assumptions:
+
+ - I assumed it would be OK to make a 2 player RPS instead of a 1 player
+   game. I didn't use random numbers.
+
+List of Known Bugs:
+
+ - no known bugs at the moment
+
+Running output: 
+
+byrne00@mylinux:~/CPSC1280/assignments/assignment4/RPS25> ./referee
+LOG: Rock Paper Scissors client is up.
+LOG: Waiting for players...
+LOG: Player One: ready
+LOG: Player Two: ready
+LOG: Two players have connected
+LOG: Game 1 Starts
+
+LOG: display results
+
+LOG: result: 2
+LOG: Announcing results
+LOG: player 1 loses...
+LOG: Game 2 Starts
+LOG: display results
+
+LOG: result: 1
+LOG: Announcing results
+LOG: player 1 wins!
+LOG: Tell both players to hang up
+
+LOG: Close the connections
+
+LOG: Back from child.
+LOG: Game over
+LOG: Waiting for players...
+
+byrne00@mylinux:~/CPSC1280/assignments/assignment4/RPS25> ./player
+     ***** ***          ***** **          *******
+  ******  * **       ******  ****       *       ***
+ **   *  *  **      **   *  *  ***     *         **
+*    *  *   **     *    *  *    ***    **        *
+    *  *    *          *  *      **     ***
+   ** **   *          ** **      **    ** ***
+   ** **  *           ** **      **     *** ***
+   ** ****          **** **      *        *** ***
+   ** **  ***      * *** **     *           *** ***
+   ** **    **        ** *******              ** ***
+   *  **    **        ** ******                ** **
+      *     **        ** **                     * *
+  ****      ***       ** **           ***        *
+ *  ****    **        ** **          *  *********
+*    **     *    **   ** **         *     *****
+*               ***   *  *          *
+ **              ***    *            **
+                  ******   .--.      .
+                    ***   :    :     |   o
+                          |    |.--. |   .  .--. .-.
+                          :    ;|  | |   |  |  |(.-'
+                           `--' '  `-`--' `-'  `-`--'
+  Welcome to the Paper, Scissors and Rock game.
+
+  Choose Your WEAPON:
+
+  1. rock
+  2. paper
+  3. scissors
+
+1
+  You chose...
+  rock
+    wait while player 2 chooses...
+  rock vs paper
+
+  Player 2 wins...
+  Continue? (y/n)
+y
+  Waiting for player 2...
+  Both players have agreed to CONTINUE
+  Choose Your WEAPON:
+
+  1. rock
+  2. paper
+  3. scissors
+
+3
+  You chose...
+  scissors
+    wait while player 2 chooses...
+  scissors vs paper
+
+  You Win!
+  Continue? (y/n)
+n
+  Waiting for player 2...
+  You both agreed to stop playing.
+
