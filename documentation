@@ -1,3 +1,12 @@
+IN ORDER TO RUN THE APP:
+
+1.) start the server
+    - you should see a message waiting for players
+2.) use screen or open a second putty window to get 
+    two more windows
+3.) start the client in both windows (server should show appropriate messages)
+4.) once the second client starts the game begins
+
 Assumptions:
 
  - I assumed it would be OK to make a 2 player RPS instead of a 1 player
